@@ -117,7 +117,6 @@
         
         <!-- Loading Skeleton -->
         <div id="skeletonLoader" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <!-- Repeated Skeletons -->
             <script>
                 for(let i=0; i<8; i++) {
                     document.write(`
@@ -153,18 +152,16 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ----------------------------------------------------
-        // ⚠️ REPLACE WITH YOUR FIREBASE CONFIG
-        // ----------------------------------------------------
+        // Firebase Config
         const firebaseConfig = {
-  apiKey: "AIzaSyBXFGeJTq6E7aVPfzupbob9O1pJpgkYN6w",
-  authDomain: "xscoreab.firebaseapp.com",
-  databaseURL: "https://xscoreab-default-rtdb.firebaseio.com",
-  projectId: "xscoreab",
-  storageBucket: "xscoreab.firebasestorage.app",
-  messagingSenderId: "248599434610",
-  appId: "1:248599434610:web:57400a26c6d4e87e3bb9eb"
-};
+            apiKey: "AIzaSyBXFGeJTq6E7aVPfzupbob9O1pJpgkYN6w",
+            authDomain: "xscoreab.firebaseapp.com",
+            databaseURL: "https://xscoreab-default-rtdb.firebaseio.com",
+            projectId: "xscoreab",
+            storageBucket: "xscoreab.firebasestorage.app",
+            messagingSenderId: "248599434610",
+            appId: "1:248599434610:web:57400a26c6d4e87e3bb9eb"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -230,9 +227,16 @@
                     
                     const scoreColor = getScoreColor(p.score);
                     
+                    // ✅ UPDATED: Optimize Image URL using ImageKit Query Params
+                    // Adds ?tr=w-400,h-400 to the URL
+                    let imageUrl = p.profileImage || 'https://via.placeholder.com/150';
+                    if (imageUrl.includes('ik.imagekit.io')) {
+                        imageUrl += '?tr=w-400,h-400';
+                    }
+
                     card.innerHTML = `
                         <div class="relative mb-4">
-                            <img src="${p.profileImage || 'https://via.placeholder.com/150'}" 
+                            <img src="${imageUrl}" 
                                  alt="${p.name}" 
                                  class="w-24 h-24 rounded-full object-cover border-4 border-gray-50 dark:border-gray-700 shadow-md group-hover:scale-105 transition-transform">
                             <span class="absolute -bottom-2 -right-2 ${scoreColor} text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-white dark:border-gray-800">
@@ -296,5 +300,4 @@
         })();
     </script>
 </body>
-
 </html>

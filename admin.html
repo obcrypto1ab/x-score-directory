@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- ✅ ADDED: ImageKit SDK -->
+    <script src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -181,34 +184,37 @@
         </div>
     </div>
 
-    <!-- Firebase Logic -->
+    <!-- Firebase & ImageKit Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        // ✅ REMOVED: getStorage, ref, uploadBytes, getDownloadURL
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        // ----------------------------------------------------
-        // ⚠️ REPLACE WITH YOUR FIREBASE CONFIG
-        // ----------------------------------------------------
+        // Firebase Config
         const firebaseConfig = {
-  apiKey: "AIzaSyBXFGeJTq6E7aVPfzupbob9O1pJpgkYN6w",
-  authDomain: "xscoreab.firebaseapp.com",
-  databaseURL: "https://xscoreab-default-rtdb.firebaseio.com",
-  projectId: "xscoreab",
-  storageBucket: "xscoreab.firebasestorage.app",
-  messagingSenderId: "248599434610",
-  appId: "1:248599434610:web:57400a26c6d4e87e3bb9eb"
-};
+            apiKey: "AIzaSyBXFGeJTq6E7aVPfzupbob9O1pJpgkYN6w",
+            authDomain: "xscoreab.firebaseapp.com",
+            databaseURL: "https://xscoreab-default-rtdb.firebaseio.com",
+            projectId: "xscoreab",
+            storageBucket: "xscoreab.firebasestorage.app",
+            messagingSenderId: "248599434610",
+            appId: "1:248599434610:web:57400a26c6d4e87e3bb9eb"
+        };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
         
-        // Allowed Admin Email
-const ADMIN_EMAIL = "bristyxom@gmail.com";
+        // ✅ ADDED: ImageKit Initialization
+        var imagekit = new ImageKit({
+            publicKey: "public_yRB2dktvG7CXL9J/UNiO8v7Aolg=",
+            urlEndpoint: "https://ik.imagekit.io/cgdkn8ki9",
+            authenticationEndpoint: "http://www.yourserver.com/auth" // ⚠️ Must be your real server endpoint
+        });
 
+        // Allowed Admin Email
+        const ADMIN_EMAIL = "bristyxom@gmail.com";
 
         // DOM Elements
         const loginSection = document.getElementById('loginSection');
@@ -224,7 +230,7 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
                 dashboardSection.classList.remove('hidden');
                 loadProfiles();
             } else {
-                if(user) signOut(auth); // Force logout if email doesn't match
+                if(user) signOut(auth);
                 loginSection.classList.remove('hidden');
                 dashboardSection.classList.add('hidden');
             }
@@ -259,7 +265,6 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
             }
         });
 
-        // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
         // Load Data
@@ -273,9 +278,13 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
                     const data = doc.data();
                     const row = document.createElement('tr');
                     row.className = "hover:bg-gray-700/30 transition";
+                    
+                    // Display image with Resize for table (Performance)
+                    const thumbUrl = data.profileImage ? `${data.profileImage}?tr=w-50,h-50` : 'https://via.placeholder.com/50';
+
                     row.innerHTML = `
                         <td class="p-4">
-                            <img src="${data.profileImage || 'https://via.placeholder.com/50'}" class="w-10 h-10 rounded-full object-cover border border-gray-600">
+                            <img src="${thumbUrl}" class="w-10 h-10 rounded-full object-cover border border-gray-600">
                         </td>
                         <td class="p-4 font-medium">${data.name}</td>
                         <td class="p-4">
@@ -290,18 +299,15 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
                         </td>
                     `;
                     
-                    // Attach event listeners to buttons
                     row.querySelector('.edit-btn').addEventListener('click', () => openEditModal(doc.id, data));
                     row.querySelector('.delete-btn').addEventListener('click', () => openDeleteModal(doc.id));
-                    
                     tableBody.appendChild(row);
                 });
             });
         }
 
-        // --- CRUD Logic ---
+        // --- CRUD Logic (UPDATED for ImageKit) ---
 
-        // SAVE (Add/Edit)
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btnText = document.getElementById('saveBtnText');
@@ -313,13 +319,27 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
             spinner.classList.remove('hidden');
 
             try {
-                let imageUrl = document.getElementById('previewImage').src; // Default to existing
+                let imageUrl = document.getElementById('previewImage').src;
 
-                // 1. Upload Image if selected
+                // 1. Upload to ImageKit if file exists
                 if(file) {
-                    const storageRef = ref(storage, `profiles/${Date.now()}_${file.name}`);
-                    await uploadBytes(storageRef, file);
-                    imageUrl = await getDownloadURL(storageRef);
+                    btnText.innerText = "Uploading Image...";
+                    
+                    await new Promise((resolve, reject) => {
+                        imagekit.upload({
+                            file: file,
+                            fileName: `profile_${Date.now()}.jpg`,
+                            tags: ["xscore-profile"]
+                        }, function(err, result) {
+                            if(err) {
+                                console.error("ImageKit Error:", err);
+                                reject("Image upload failed. Check your Auth Endpoint.");
+                            } else {
+                                imageUrl = result.url; // Get ImageKit URL
+                                resolve();
+                            }
+                        });
+                    });
                 }
 
                 const profileData = {
@@ -332,11 +352,9 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
                 };
 
                 if(editId) {
-                    // Update
                     await updateDoc(doc(db, "profiles", editId), profileData);
                     showToast("Profile updated successfully!");
                 } else {
-                    // Create
                     profileData.createdAt = serverTimestamp();
                     await addDoc(collection(db, "profiles"), profileData);
                     showToast("Profile added successfully!");
@@ -345,25 +363,23 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
                 closeModal();
             } catch (error) {
                 console.error(error);
-                alert("Error saving profile: " + error.message);
+                alert("Error: " + error);
             } finally {
                 btnText.innerText = "Save Profile";
                 spinner.classList.add('hidden');
             }
         });
 
-        // Delete
+        // Delete Logic (Unchanged)
         let deleteTargetId = null;
         window.openDeleteModal = (id) => {
             deleteTargetId = id;
             document.getElementById('deleteModal').classList.remove('hidden');
         }
-        
         window.closeDeleteModal = () => {
             deleteTargetId = null;
             document.getElementById('deleteModal').classList.add('hidden');
         }
-
         document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
             if(deleteTargetId) {
                 await deleteDoc(doc(db, "profiles", deleteTargetId));
@@ -372,8 +388,7 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
             }
         });
 
-        // --- Modal Helpers ---
-
+        // Modal Helpers (Unchanged)
         window.openModal = () => {
             document.getElementById('profileForm').reset();
             document.getElementById('editDocId').value = "";
@@ -387,7 +402,6 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
         window.openEditModal = (id, data) => {
             document.getElementById('editDocId').value = id;
             document.getElementById('modalTitle').innerText = "Edit Profile";
-            
             document.getElementById('pName').value = data.name;
             document.getElementById('pScore').value = data.score;
             document.getElementById('pLink').value = data.profileLink;
@@ -399,7 +413,6 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
                 img.classList.remove('hidden');
                 document.getElementById('uploadPlaceholder').classList.add('hidden');
             }
-            
             document.getElementById('modal').classList.remove('hidden');
         }
 
@@ -429,7 +442,6 @@ const ADMIN_EMAIL = "bristyxom@gmail.com";
                 t.classList.add('translate-y-20', 'opacity-0');
             }, 3000);
         }
-
     </script>
 </body>
 </html>

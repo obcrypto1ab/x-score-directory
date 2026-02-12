@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Score Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans antialiased">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <div class="bg-gray-800 border-l-4 border-blue-500 text-white px-6 py-4 rounded shadow-2xl flex items-center">
+            <span id="toastMsg" class="font-medium">Notification</span>
+        </div>
+    </div>
+
+    <!-- Login Section -->
+    <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
+            <div class="text-center mb-8">
+                <div class="w-12 h-12 bg-blue-600 rounded-lg mx-auto flex items-center justify-center text-xl font-bold mb-4">X</div>
+                <h2 class="text-2xl font-bold">Admin Portal</h2>
+                <p class="text-gray-400 text-sm mt-2">Restricted Access Only</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Email</label>
+                    <input type="email" id="email" required class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Password</label>
+                    <input type="password" id="password" required class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-white">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition flex justify-center items-center">
+                    <span id="loginBtnText">Sign In</span>
+                    <i id="loginSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                </button>
+                <p id="loginError" class="text-red-500 text-sm text-center hidden"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="hidden min-h-screen flex">
+        
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-800 border-r border-gray-700 hidden md:flex flex-col">
+            <div class="p-6 border-b border-gray-700 flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold">X</div>
+                <span class="font-bold text-lg">Admin Panel</span>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="#" class="flex items-center gap-3 px-4 py-3 bg-gray-700 text-white rounded-lg">
+                    <i class="fas fa-users w-5"></i> Profiles
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-700">
+                <button id="logoutBtn" class="flex items-center gap-3 px-4 py-2 text-gray-400 hover:text-white transition w-full">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden">
+            <!-- Header -->
+            <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-6">
+                <h1 class="text-xl font-bold">Manage Profiles</h1>
+                <button onclick="openModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Add Profile
+                </button>
+            </header>
+
+            <!-- Table Content -->
+            <div class="flex-1 overflow-auto p-6">
+                <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-700/50 text-gray-400 text-sm uppercase">
+                                <th class="p-4">Profile</th>
+                                <th class="p-4">Name</th>
+                                <th class="p-4">Score</th>
+                                <th class="p-4">Link</th>
+                                <th class="p-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody" class="divide-y divide-gray-700">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                    <div id="tableLoader" class="p-8 text-center text-gray-400">
+                        <i class="fas fa-spinner fa-spin text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit/Add Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl w-full max-w-lg shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-xl font-bold">Add Profile</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="profileForm" class="p-6 space-y-4">
+                <input type="hidden" id="editDocId">
+                
+                <!-- Image Upload -->
+                <div class="flex flex-col items-center gap-4">
+                    <div class="relative w-24 h-24 rounded-full bg-gray-700 overflow-hidden border-2 border-gray-600">
+                        <img id="previewImage" src="" class="w-full h-full object-cover hidden">
+                        <div id="uploadPlaceholder" class="absolute inset-0 flex items-center justify-center text-gray-500">
+                            <i class="fas fa-camera text-2xl"></i>
+                        </div>
+                    </div>
+                    <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm text-white transition">
+                        Upload Image
+                        <input type="file" id="imageFile" accept="image/*" class="hidden" onchange="previewFile()">
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Full Name</label>
+                    <input type="text" id="pName" required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white focus:border-blue-500 outline-none">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">X Score</label>
+                        <input type="number" id="pScore" required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                         <label class="block text-sm text-gray-400 mb-1">Profile Link</label>
+                        <input type="url" id="pLink" placeholder="https://" required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white focus:border-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Description</label>
+                    <textarea id="pDesc" rows="3" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white focus:border-blue-500 outline-none"></textarea>
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium flex items-center gap-2">
+                        <i id="saveSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                        <span id="saveBtnText">Save Profile</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl max-w-sm w-full p-6 text-center border border-gray-700">
+            <div class="w-12 h-12 bg-red-900/50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Delete Profile?</h3>
+            <p class="text-gray-400 mb-6">This action cannot be undone.</p>
+            <div class="flex justify-center gap-3">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white">Cancel</button>
+                <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+        // ----------------------------------------------------
+        // ⚠️ REPLACE WITH YOUR FIREBASE CONFIG
+        // ----------------------------------------------------
+        const firebaseConfig = {
+  apiKey: "AIzaSyBXFGeJTq6E7aVPfzupbob9O1pJpgkYN6w",
+  authDomain: "xscoreab.firebaseapp.com",
+  databaseURL: "https://xscoreab-default-rtdb.firebaseio.com",
+  projectId: "xscoreab",
+  storageBucket: "xscoreab.firebasestorage.app",
+  messagingSenderId: "248599434610",
+  appId: "1:248599434610:web:57400a26c6d4e87e3bb9eb"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        
+        // Allowed Admin Email
+const ADMIN_EMAIL = "bristyxom@gmail.com";
+
+
+        // DOM Elements
+        const loginSection = document.getElementById('loginSection');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const loginForm = document.getElementById('loginForm');
+        const tableBody = document.getElementById('adminTableBody');
+        const profileForm = document.getElementById('profileForm');
+        
+        // Auth State Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.email === ADMIN_EMAIL) {
+                loginSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+                loadProfiles();
+            } else {
+                if(user) signOut(auth); // Force logout if email doesn't match
+                loginSection.classList.remove('hidden');
+                dashboardSection.classList.add('hidden');
+            }
+        });
+
+        // Login Handler
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorText = document.getElementById('loginError');
+            const btnText = document.getElementById('loginBtnText');
+            const spinner = document.getElementById('loginSpinner');
+
+            if(email !== ADMIN_EMAIL) {
+                errorText.innerText = "Access Denied: Unauthorized Email";
+                errorText.classList.remove('hidden');
+                return;
+            }
+
+            btnText.innerText = "Verifying...";
+            spinner.classList.remove('hidden');
+            errorText.classList.add('hidden');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                errorText.innerText = "Invalid credentials";
+                errorText.classList.remove('hidden');
+                btnText.innerText = "Sign In";
+                spinner.classList.add('hidden');
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
+        // Load Data
+        function loadProfiles() {
+            const q = query(collection(db, "profiles"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                document.getElementById('tableLoader').classList.add('hidden');
+                tableBody.innerHTML = '';
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-gray-700/30 transition";
+                    row.innerHTML = `
+                        <td class="p-4">
+                            <img src="${data.profileImage || 'https://via.placeholder.com/50'}" class="w-10 h-10 rounded-full object-cover border border-gray-600">
+                        </td>
+                        <td class="p-4 font-medium">${data.name}</td>
+                        <td class="p-4">
+                            <span class="bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold">${data.score}</span>
+                        </td>
+                        <td class="p-4 text-blue-400 truncate max-w-[150px]">
+                            <a href="${data.profileLink}" target="_blank" class="hover:underline text-sm"><i class="fas fa-external-link-alt"></i> Link</a>
+                        </td>
+                        <td class="p-4 text-right space-x-2">
+                            <button class="edit-btn text-blue-400 hover:text-blue-300 p-2" data-id="${doc.id}"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn text-red-400 hover:text-red-300 p-2" data-id="${doc.id}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    
+                    // Attach event listeners to buttons
+                    row.querySelector('.edit-btn').addEventListener('click', () => openEditModal(doc.id, data));
+                    row.querySelector('.delete-btn').addEventListener('click', () => openDeleteModal(doc.id));
+                    
+                    tableBody.appendChild(row);
+                });
+            });
+        }
+
+        // --- CRUD Logic ---
+
+        // SAVE (Add/Edit)
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btnText = document.getElementById('saveBtnText');
+            const spinner = document.getElementById('saveSpinner');
+            const editId = document.getElementById('editDocId').value;
+            const file = document.getElementById('imageFile').files[0];
+
+            btnText.innerText = "Processing...";
+            spinner.classList.remove('hidden');
+
+            try {
+                let imageUrl = document.getElementById('previewImage').src; // Default to existing
+
+                // 1. Upload Image if selected
+                if(file) {
+                    const storageRef = ref(storage, `profiles/${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    imageUrl = await getDownloadURL(storageRef);
+                }
+
+                const profileData = {
+                    name: document.getElementById('pName').value,
+                    score: Number(document.getElementById('pScore').value),
+                    profileLink: document.getElementById('pLink').value,
+                    description: document.getElementById('pDesc').value,
+                    profileImage: imageUrl,
+                    updatedAt: serverTimestamp()
+                };
+
+                if(editId) {
+                    // Update
+                    await updateDoc(doc(db, "profiles", editId), profileData);
+                    showToast("Profile updated successfully!");
+                } else {
+                    // Create
+                    profileData.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "profiles"), profileData);
+                    showToast("Profile added successfully!");
+                }
+
+                closeModal();
+            } catch (error) {
+                console.error(error);
+                alert("Error saving profile: " + error.message);
+            } finally {
+                btnText.innerText = "Save Profile";
+                spinner.classList.add('hidden');
+            }
+        });
+
+        // Delete
+        let deleteTargetId = null;
+        window.openDeleteModal = (id) => {
+            deleteTargetId = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+        
+        window.closeDeleteModal = () => {
+            deleteTargetId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if(deleteTargetId) {
+                await deleteDoc(doc(db, "profiles", deleteTargetId));
+                showToast("Profile deleted.");
+                closeDeleteModal();
+            }
+        });
+
+        // --- Modal Helpers ---
+
+        window.openModal = () => {
+            document.getElementById('profileForm').reset();
+            document.getElementById('editDocId').value = "";
+            document.getElementById('modalTitle').innerText = "Add Profile";
+            document.getElementById('previewImage').classList.add('hidden');
+            document.getElementById('previewImage').src = "";
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        window.openEditModal = (id, data) => {
+            document.getElementById('editDocId').value = id;
+            document.getElementById('modalTitle').innerText = "Edit Profile";
+            
+            document.getElementById('pName').value = data.name;
+            document.getElementById('pScore').value = data.score;
+            document.getElementById('pLink').value = data.profileLink;
+            document.getElementById('pDesc').value = data.description;
+            
+            if(data.profileImage) {
+                const img = document.getElementById('previewImage');
+                img.src = data.profileImage;
+                img.classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            }
+            
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        window.closeModal = () => {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        window.previewFile = () => {
+            const file = document.getElementById('imageFile').files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.getElementById('previewImage');
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                    document.getElementById('uploadPlaceholder').classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                t.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+    </script>
+</body>
+</html>

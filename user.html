@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Score Directory</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: 'var(--color-primary)',
+                        secondary: 'var(--color-secondary)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --color-primary: #3b82f6; /* Default Blue */
+            --color-secondary: #1d4ed8;
+        }
+        /* Theme Variables */
+        .theme-blue { --color-primary: #3b82f6; --color-secondary: #1d4ed8; }
+        .theme-purple { --color-primary: #a855f7; --color-secondary: #7e22ce; }
+        .theme-green { --color-primary: #22c55e; --color-secondary: #15803d; }
+        .theme-red { --color-primary: #ef4444; --color-secondary: #b91c1c; }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+        .dark .glass {
+            background: rgba(17, 24, 39, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300 theme-blue">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 glass border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl shadow-lg">X</div>
+                    <span class="font-bold text-xl tracking-tight">Score<span class="text-[var(--color-primary)]">Directory</span></span>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center gap-4">
+                    <!-- Theme Selector -->
+                    <div class="hidden sm:flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-full">
+                        <button onclick="setTheme('theme-blue')" class="w-4 h-4 rounded-full bg-blue-500 hover:scale-110 transition"></button>
+                        <button onclick="setTheme('theme-purple')" class="w-4 h-4 rounded-full bg-purple-500 hover:scale-110 transition"></button>
+                        <button onclick="setTheme('theme-green')" class="w-4 h-4 rounded-full bg-green-500 hover:scale-110 transition"></button>
+                        <button onclick="setTheme('theme-red')" class="w-4 h-4 rounded-full bg-red-500 hover:scale-110 transition"></button>
+                    </div>
+
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:inline text-yellow-400"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero & Filters -->
+    <div class="pt-24 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)]">
+                Discover Top Profiles
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+                Explore our curated directory ranked by X Score. Filter by score range or search by name.
+            </p>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row gap-4 items-center justify-between">
+            
+            <!-- Search -->
+            <div class="relative w-full md:w-1/2">
+                <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                <input type="text" id="searchInput" placeholder="Search name or description..." 
+                    class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-700 border-none focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition">
+            </div>
+
+            <!-- Range Filter -->
+            <div class="w-full md:w-1/3">
+                <select id="scoreFilter" class="w-full py-3 px-4 rounded-xl bg-gray-50 dark:bg-gray-700 border-none focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition appearance-none cursor-pointer">
+                    <option value="all">All Score Ranges</option>
+                    <option value="100-200">100 – 200</option>
+                    <option value="200-400">200 – 400</option>
+                    <option value="400-1000">400 – 1,000</option>
+                    <option value="1000-3000">1,000 – 3,000</option>
+                    <option value="3000-5000">3,000 – 5,000</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <main class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-20">
+        
+        <!-- Loading Skeleton -->
+        <div id="skeletonLoader" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Repeated Skeletons -->
+            <script>
+                for(let i=0; i<8; i++) {
+                    document.write(`
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse">
+                        <div class="h-20 w-20 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-4"></div>
+                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto mb-2"></div>
+                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto mb-4"></div>
+                        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-full"></div>
+                    </div>
+                    `);
+                }
+            </script>
+        </div>
+
+        <!-- Content Grid -->
+        <div id="profilesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden">
+            <!-- Profile Cards Injected Here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-20">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
+                <i class="fas fa-folder-open text-2xl text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No profiles found</h3>
+            <p class="text-gray-500 dark:text-gray-400">Try adjusting your search or filters.</p>
+        </div>
+
+    </main>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ----------------------------------------------------
+        // ⚠️ REPLACE WITH YOUR FIREBASE CONFIG
+        // ----------------------------------------------------
+        const firebaseConfig = {
+  apiKey: "AIzaSyBXFGeJTq6E7aVPfzupbob9O1pJpgkYN6w",
+  authDomain: "xscoreab.firebaseapp.com",
+  databaseURL: "https://xscoreab-default-rtdb.firebaseio.com",
+  projectId: "xscoreab",
+  storageBucket: "xscoreab.firebasestorage.app",
+  messagingSenderId: "248599434610",
+  appId: "1:248599434610:web:57400a26c6d4e87e3bb9eb"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // State
+        let allProfiles = [];
+        const profilesGrid = document.getElementById('profilesGrid');
+        const skeletonLoader = document.getElementById('skeletonLoader');
+        const emptyState = document.getElementById('emptyState');
+        const searchInput = document.getElementById('searchInput');
+        const scoreFilter = document.getElementById('scoreFilter');
+
+        // Real-time Listener
+        const q = query(collection(db, "profiles"), orderBy("score", "desc"));
+        
+        onSnapshot(q, (snapshot) => {
+            allProfiles = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            renderProfiles();
+            skeletonLoader.classList.add('hidden');
+            profilesGrid.classList.remove('hidden');
+        }, (error) => {
+            console.error("Error fetching profiles:", error);
+        });
+
+        // Render Function
+        function renderProfiles() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const scoreRange = scoreFilter.value;
+
+            // Filter Logic
+            const filtered = allProfiles.filter(profile => {
+                // Search
+                const matchesSearch = profile.name.toLowerCase().includes(searchTerm) || 
+                                      (profile.description && profile.description.toLowerCase().includes(searchTerm));
+                
+                // Score Range
+                let matchesScore = true;
+                if(scoreRange !== 'all') {
+                    const [min, max] = scoreRange.split('-').map(Number);
+                    matchesScore = profile.score >= min && profile.score <= max;
+                }
+
+                return matchesSearch && matchesScore;
+            });
+
+            // Update UI
+            profilesGrid.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                profilesGrid.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                profilesGrid.classList.remove('hidden');
+                
+                filtered.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = "group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center";
+                    
+                    const scoreColor = getScoreColor(p.score);
+                    
+                    card.innerHTML = `
+                        <div class="relative mb-4">
+                            <img src="${p.profileImage || 'https://via.placeholder.com/150'}" 
+                                 alt="${p.name}" 
+                                 class="w-24 h-24 rounded-full object-cover border-4 border-gray-50 dark:border-gray-700 shadow-md group-hover:scale-105 transition-transform">
+                            <span class="absolute -bottom-2 -right-2 ${scoreColor} text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-white dark:border-gray-800">
+                                ${p.score}
+                            </span>
+                        </div>
+                        
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">${p.name}</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 min-h-[2.5rem]">
+                            ${p.description || 'No description available.'}
+                        </p>
+                        
+                        <a href="${p.profileLink}" target="_blank" 
+                           class="mt-auto w-full py-2.5 px-4 bg-[var(--color-primary)] hover:bg-[var(--color-secondary)] text-white rounded-xl font-medium transition shadow-lg shadow-blue-500/20">
+                           View Profile
+                        </a>
+                    `;
+                    profilesGrid.appendChild(card);
+                });
+            }
+        }
+
+        // Helper: Score Badge Colors
+        function getScoreColor(score) {
+            if(score >= 3000) return 'bg-yellow-500';
+            if(score >= 1000) return 'bg-purple-500';
+            if(score >= 400) return 'bg-green-500';
+            if(score >= 200) return 'bg-blue-500';
+            return 'bg-gray-500';
+        }
+
+        // Event Listeners
+        searchInput.addEventListener('input', renderProfiles);
+        scoreFilter.addEventListener('change', renderProfiles);
+
+    </script>
+
+    <!-- Theme & UI Scripts -->
+    <script>
+        // Theme Management
+        function setTheme(themeName) {
+            document.body.className = document.body.className.replace(/theme-\w+/, themeName);
+            localStorage.setItem('xscore-theme', themeName);
+        }
+
+        // Dark Mode
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('xscore-mode', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        // Init UI Preferences
+        (function initUI() {
+            const savedTheme = localStorage.getItem('xscore-theme');
+            if(savedTheme) setTheme(savedTheme);
+            
+            const savedMode = localStorage.getItem('xscore-mode');
+            if(savedMode === 'dark' || (!savedMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+</body>
+</html>
